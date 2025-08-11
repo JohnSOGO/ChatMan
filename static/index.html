@@ -1,0 +1,101 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>TikTokLive – Most Recent Chatters</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <style>
+    :root { font-family: system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; }
+    body { margin: 0; background: #0f1115; color: #e7e9ee; }
+    header { padding: 16px 20px; border-bottom: 1px solid #242734; position: sticky; top: 0; background:#0f1115;}
+    h1 { font-size: 18px; margin: 0; font-weight: 600; }
+    .wrap { max-width: 940px; margin: 0 auto; padding: 16px; }
+    .toolbar { display:flex; gap:10px; align-items:center; margin-bottom:12px; color:#9aa3bd; font-size:13px; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(280px,1fr)); gap: 12px; }
+    .card { background:#151826; border:1px solid #22263a; border-radius:14px; padding:12px; box-shadow:0 6px 20px rgba(0,0,0,.25); }
+    .row { display:flex; align-items:center; gap:10px; }
+    .pill { font-size:12px; padding:2px 8px; border-radius:999px; border:1px solid #2a2e44; color:#a9b1c7; }
+    .uid { color:#8b95b2; font-size:12px; }
+    .name { font-weight:600; }
+    .comment { margin-top:8px; color:#cfd6e6; font-size:14px; line-height:1.35; word-wrap:anywhere; }
+    .meta { margin-top:10px; display:flex; justify-content:space-between; font-size:12px; color:#9aa3bd; }
+    .empty { opacity:.7; text-align:center; padding:40px; border:1px dashed #2a2e44; border-radius:14px; }
+  </style>
+</head>
+<body>
+  <header><h1>TikTokLive – Most Recent Chatters</h1></header>
+  <div class="wrap">
+    <div class="toolbar">
+      <div id="count">0 users</div>
+      <div>•</div>
+      <div id="updated">—</div>
+    </div>
+    <div id="list" class="grid"></div>
+    <div id="empty" class="empty" style="display:none;">No chatters yet. Waiting for comments…</div>
+  </div>
+
+<script>
+function escapeHtml(s) {
+  return String(s)
+    .replaceAll("&","&amp;").replaceAll("<","&lt;")
+    .replaceAll(">","&gt;").replaceAll('"',"&quot;").replaceAll("'","&#039;");
+}
+function timeAgo(ts) {
+  const s = Math.max(0, Math.floor(Date.now()/1000 - ts));
+  if (s < 60) return s + "s ago";
+  const m = Math.floor(s/60);
+  if (m < 60) return m + "m ago";
+  const h = Math.floor(m/60);
+  if (h < 24) return h + "h ago";
+  const d = Math.floor(h/24);
+  return d + "d ago";
+}
+async function refresh() {
+  try {
+    const res = await fetch("/data.json", { cache: "no-store" });
+    const data = await res.json();
+
+    const list = document.getElementById("list");
+    const empty = document.getElementById("empty");
+    const count = document.getElementById("count");
+    const updated = document.getElementById("updated");
+
+    list.innerHTML = "";
+    count.textContent = `${data.length} user${data.length===1?"":"s"}`;
+    updated.textContent = `Updated ${new Date().toLocaleTimeString()}`;
+
+    if (!data.length) {
+      empty.style.display = "block";
+      return;
+    }
+    empty.style.display = "none";
+
+    for (const u of data) {
+      const lastTsSec = Math.floor(u.last_ts || 0);
+      const card = document.createElement("div");
+      card.className = "card";
+      card.innerHTML = `
+        <div class="row">
+          <div class="pill">#${u.count || 1}</div>
+          <div>
+            <div class="name">${escapeHtml(u.name || u.uid)}</div>
+            <div class="uid">@${escapeHtml(u.uid || "")}</div>
+          </div>
+        </div>
+        <div class="comment">${escapeHtml(u.last_comment || "")}</div>
+        <div class="meta">
+          <div>Last seen: ${lastTsSec ? timeAgo(lastTsSec) : "—"}</div>
+          <div>${lastTsSec ? new Date(lastTsSec*1000).toLocaleTimeString() : ""}</div>
+        </div>
+      `;
+      list.appendChild(card);
+    }
+  } catch (e) {
+    console.error(e);
+  }
+}
+refresh();
+setInterval(refresh, 1000);
+</script>
+</body>
+</html>
