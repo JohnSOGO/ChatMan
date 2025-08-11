@@ -1,0 +1,2 @@
+# ChatMan
+Discord Chat Manager
