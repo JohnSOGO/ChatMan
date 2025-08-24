@@ -69,7 +69,7 @@ else:
         disabled=["message"],
         column_config={
             "message": st.column_config.TextColumn(width="large"),
-            "reviewed": st.column_config.CheckboxColumn("reviewed", width=0)
+            "reviewed": st.column_config.CheckboxColumn("reviewed", width="small")
         },
         hide_index=True
     )
