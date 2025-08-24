@@ -1,36 +1,23 @@
+
 from TikTokLive import TikTokLiveClient
 from TikTokLive.events import ConnectEvent, CommentEvent
-import json
+import chat_store as store
 
-user_list = []
+print("DB file:", store.init_db())
 
-def update_user_list(nickname):
-    global user_list
-    if nickname in user_list:
-        user_list.remove(nickname)
-    user_list.insert(0, nickname)
-    with open('users.json', 'w', encoding='utf-8') as f:
-        json.dump(user_list, f, ensure_ascii=False, indent=2)
+tdm = "@tostig.the.dm"
 
-# Create the client
-client: TikTokLiveClient = TikTokLiveClient(unique_id="@naqss_")
+client = TikTokLiveClient(unique_id=tdm)
 
-
-# Listen to an event with a decorator!
 @client.on(ConnectEvent)
-async def on_connect(event: ConnectEvent):
-    print(f"Connected to @{event.unique_id} (Room ID: {client.room_id}")
-    update_user_list(event.unique_id)
+async def on_connect(_):
+    print(f"Connected. Logging to {store.DB_PATH.resolve()}")
 
-
-# Or, add it manually via "client.add_listener()"
-async def on_comment(event: CommentEvent) -> None:
-    print(f"{event.user.nickname} -> {event.comment}")
-
+async def on_comment(event: CommentEvent):
+    msg_id = store.add_message(event.user.nickname, event.comment)
+    print(f"[{msg_id}] {event.user.nickname} -> {event.comment}")
 
 client.add_listener(CommentEvent, on_comment)
 
-if __name__ == '__main__':
-    # Run the client and block the main thread
-    # await client.start() to run non-blocking
+if __name__ == "__main__":
     client.run()
